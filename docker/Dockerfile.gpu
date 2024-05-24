@@ -5,16 +5,25 @@ RUN rm /etc/apt/sources.list.d/cuda.list
 RUN apt-get update
 RUN apt-get install -y unzip graphviz curl musescore3
 
-RUN pip install --upgrade pip
+# Clear any potentially corrupted .pyc files
+RUN find /usr -name '*.pyc' -delete
+
+# Install pip using get-pip.py script
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && python get-pip.py \
+    && rm get-pip.py
 
 WORKDIR /app
 
 COPY ./requirements.txt /app
-RUN pip install -r /app/requirements.txt
+
+# Add logging before pip install
+RUN echo "Starting pip install -r /app/requirements.txt" \
+    && pip install -r /app/requirements.txt \
+    && echo "Finished pip install"
 
 # Hack to get around tensorflow-io issue - https://github.com/tensorflow/io/issues/1755
-RUN pip install tensorflow-io
-RUN pip uninstall -y tensorflow-io
+RUN pip install tensorflow-io && pip uninstall -y tensorflow-io
 
 COPY /notebooks/. /app/notebooks
 COPY /scripts/. /app/scripts
